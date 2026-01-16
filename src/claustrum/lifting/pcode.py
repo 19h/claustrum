@@ -109,9 +109,9 @@ class PCodeOp:
     seq_num: int
     address: int
     output: Optional[Dict[str, Any]] = None
-    inputs: List[Dict[str, Any]] = None
+    inputs: Optional[List[Dict[str, Any]]] = None
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.inputs is None:
             self.inputs = []
 
@@ -229,8 +229,12 @@ class PCodeLifter(IRLifter):
         import time
         start_time = time.time()
         
+        # Type narrowing: _pyhidra is guaranteed non-None after _ensure_initialized
+        pyhidra = self._pyhidra
+        assert pyhidra is not None
+        
         try:
-            with self._pyhidra.open_program(str(binary_path), analyze=self.analyze) as flat_api:
+            with pyhidra.open_program(str(binary_path), analyze=self.analyze) as flat_api:
                 program = flat_api.getCurrentProgram()
                 listing = program.getListing()
                 
@@ -424,8 +428,12 @@ class PCodeLifter(IRLifter):
         """Lift a single basic block."""
         self._ensure_initialized()
         
+        # Type narrowing: _pyhidra is guaranteed non-None after _ensure_initialized
+        pyhidra = self._pyhidra
+        assert pyhidra is not None
+        
         try:
-            with self._pyhidra.open_program(str(binary_path), analyze=self.analyze) as flat_api:
+            with pyhidra.open_program(str(binary_path), analyze=self.analyze) as flat_api:
                 program = flat_api.getCurrentProgram()
                 listing = program.getListing()
                 addr_factory = program.getAddressFactory()
@@ -479,6 +487,10 @@ class PCodeLifter(IRLifter):
         """
         self._ensure_initialized()
         
+        # Type narrowing: _pyhidra is guaranteed non-None after _ensure_initialized
+        pyhidra = self._pyhidra
+        assert pyhidra is not None
+        
         # Map ISA to Ghidra language ID
         lang_id = self._get_language_id(isa)
         
@@ -488,7 +500,7 @@ class PCodeLifter(IRLifter):
             temp_path = f.name
             
         try:
-            with self._pyhidra.open_program(
+            with pyhidra.open_program(
                 temp_path,
                 analyze=False,
                 language=lang_id,

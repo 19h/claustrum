@@ -580,7 +580,8 @@ class ClaustrumTrainer:
         
         # Create subdirectories
         (self.output_dir / "checkpoints").mkdir(exist_ok=True)
-        Path(self.config.logging_dir).mkdir(parents=True, exist_ok=True)
+        if self.config.logging_dir is not None:
+            Path(self.config.logging_dir).mkdir(parents=True, exist_ok=True)
     
     def _setup_distributed(self) -> None:
         """Setup distributed training with Accelerate."""
@@ -819,12 +820,17 @@ class ClaustrumTrainer:
             if model_config is None:
                 model_config = ClaustrumConfig()
             
-            self.negative_miner = ProgressiveHardNegativeMiner(
-                embedding_dim=model_config.embedding_size,
-                memory_bank_size=self.config.memory_bank_size,
+            from claustrum.training.negative_mining import MiningConfig
+            
+            mining_config = MiningConfig(
                 initial_temperature=self.config.mining_initial_temperature,
                 final_temperature=self.config.mining_final_temperature,
                 warmup_epochs=self.config.mining_warmup_epochs,
+            )
+            self.negative_miner = ProgressiveHardNegativeMiner(
+                config=mining_config,
+                embedding_dim=model_config.embedding_size,
+                memory_size=self.config.memory_bank_size,
             )
             logger.info(f"Hard negative mining enabled with bank size {self.config.memory_bank_size}")
     
@@ -1552,7 +1558,7 @@ class ClaustrumTrainer:
         logger.info(f"  Learning rate = {self.config.learning_rate}")
         logger.info(f"  Scheduler = {self.config.lr_scheduler_type}")
         
-        if self.is_distributed:
+        if self.is_distributed and self.accelerator is not None:
             logger.info(f"  Distributed training with {self.accelerator.num_processes} processes")
         
         if self.config.fp16:

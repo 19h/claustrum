@@ -88,19 +88,12 @@ __all__ = [
     "ClaustrumConfig",
     # Inference
     "ClaustrumEmbedder",
-    # Data (available via import)
-    "BinaryFunctionDataset",
-    "CrossISADataset",
-    "PretrainingDataset",
-    "ContrastiveCollator",
-    "PretrainingCollator",
-    "create_train_dataloader",
-    "create_eval_dataloader",
-    # Tracing (available via import)
-    "MicroTraceCollector",
-    "ExecutionTrace",
-    "TracePredictor",
-    "TraceTokenizer",
+    # Note: Data and Tracing components are available via lazy __getattr__ import
+    # They are not listed in __all__ to avoid pyright warnings, but are still
+    # importable: BinaryFunctionDataset, CrossISADataset, PretrainingDataset,
+    # ContrastiveCollator, PretrainingCollator, create_train_dataloader,
+    # create_eval_dataloader, MicroTraceCollector, ExecutionTrace,
+    # TracePredictor, TraceTokenizer
 ]
 
 

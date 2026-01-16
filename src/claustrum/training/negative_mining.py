@@ -229,22 +229,27 @@ class ProgressiveHardNegativeMiner(HardNegativeMiner):
         if not self._memory_initialized:
             self.init_memory(embeddings.device)
 
+        # Type narrowing: after init_memory, these are guaranteed non-None
+        memory_embeddings = self._memory_embeddings
+        memory_labels = self._memory_labels
+        assert memory_embeddings is not None and memory_labels is not None
+
         batch_size = embeddings.size(0)
 
         # Circular buffer update
         ptr = self._memory_ptr
         if ptr + batch_size <= self.memory_size:
-            self._memory_embeddings[ptr : ptr + batch_size] = embeddings.detach()
-            self._memory_labels[ptr : ptr + batch_size] = labels.detach()
+            memory_embeddings[ptr : ptr + batch_size] = embeddings.detach()
+            memory_labels[ptr : ptr + batch_size] = labels.detach()
         else:
             # Wrap around
             first_part = self.memory_size - ptr
-            self._memory_embeddings[ptr:] = embeddings[:first_part].detach()
-            self._memory_labels[ptr:] = labels[:first_part].detach()
+            memory_embeddings[ptr:] = embeddings[:first_part].detach()
+            memory_labels[ptr:] = labels[:first_part].detach()
 
             second_part = batch_size - first_part
-            self._memory_embeddings[:second_part] = embeddings[first_part:].detach()
-            self._memory_labels[:second_part] = labels[first_part:].detach()
+            memory_embeddings[:second_part] = embeddings[first_part:].detach()
+            memory_labels[:second_part] = labels[first_part:].detach()
 
         self._memory_ptr = (ptr + batch_size) % self.memory_size
 
@@ -267,14 +272,20 @@ class ProgressiveHardNegativeMiner(HardNegativeMiner):
         if not self._memory_initialized:
             return self.get_hard_negative_embeddings(query_embeddings, query_labels, num_negatives)
 
+        # Type narrowing: after init, these are guaranteed non-None
+        memory_embeddings = self._memory_embeddings
+        memory_labels = self._memory_labels
+        if memory_embeddings is None or memory_labels is None:
+            return self.get_hard_negative_embeddings(query_embeddings, query_labels, num_negatives)
+
         device = query_embeddings.device
         batch_size = query_embeddings.size(0)
         num_neg = num_negatives or self.config.num_negatives
 
         # Valid memory entries
-        valid_mask = self._memory_labels >= 0
-        valid_embeddings = self._memory_embeddings[valid_mask]
-        valid_labels = self._memory_labels[valid_mask]
+        valid_mask = memory_labels >= 0
+        valid_embeddings = memory_embeddings[valid_mask]
+        valid_labels = memory_labels[valid_mask]
 
         if len(valid_embeddings) == 0:
             return self.get_hard_negative_embeddings(query_embeddings, query_labels, num_negatives)
@@ -349,9 +360,14 @@ class ProgressiveHardNegativeMiner(HardNegativeMiner):
         """
         if not self._memory_initialized:
             return None, None
-            
-        valid_count = (self._memory_labels >= 0).sum().item()
-        if valid_count < num_negatives * 2:
+        
+        memory_labels = self._memory_labels
+        if memory_labels is None:
+            return None, None
+        
+        num_neg = num_negatives if num_negatives is not None else self.config.num_negatives
+        valid_count = (memory_labels >= 0).sum().item()
+        if valid_count < num_neg * 2:
             return None, None
         
         neg_embeddings, neg_weights = self.mine_from_memory(

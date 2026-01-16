@@ -101,7 +101,7 @@ class BinaryProcessor:
             for func in lifted_functions:
                 try:
                     # Normalize IR
-                    normalized = self.normalizer.normalize(func.ir_blocks)
+                    normalized = self.normalizer.normalize(func)
 
                     # Tokenize
                     tokens = self.tokenizer.encode(normalized)
@@ -111,7 +111,8 @@ class BinaryProcessor:
                     cfg_edges = self._extract_cfg_edges(func)
 
                     # Generate function ID
-                    func_id = self._generate_function_id(binary_path, func.name, func.address)
+                    func_name = func.name or f"sub_{func.address:x}"
+                    func_id = self._generate_function_id(binary_path, func_name, func.address)
 
                     results.append(
                         ProcessedFunction(
@@ -177,15 +178,26 @@ class BinaryProcessor:
             Processed function
         """
         try:
-            # Lift bytes to IR
+            # Lift bytes to IR blocks
             ir_blocks = self.lifter.lift_bytes(
                 func_bytes,
                 isa=isa,
                 address=address,
             )
 
+            # Create a LiftedFunction from the blocks
+            from claustrum.lifting.base import LiftedFunction
+            lifted_func = LiftedFunction(
+                address=address,
+                size=len(func_bytes),
+                name=function_name,
+                blocks={block.address: block for block in ir_blocks},
+                entry_block=ir_blocks[0].address if ir_blocks else None,
+                isa=isa,
+            )
+
             # Normalize
-            normalized = self.normalizer.normalize(ir_blocks)
+            normalized = self.normalizer.normalize(lifted_func)
 
             # Tokenize
             tokens = self.tokenizer.encode(normalized)

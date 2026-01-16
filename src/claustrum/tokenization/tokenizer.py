@@ -7,7 +7,11 @@ rather than subword methods, producing sequences suitable for transformer input.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Optional, Union, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import torch
+    import numpy as np
 
 from claustrum.normalization.normalized_ir import (
     NormalizedFunction,
@@ -336,6 +340,43 @@ class IRTokenizer:
     def mask_token_id(self) -> int:
         """Return mask token ID."""
         return self.vocab.mask_token_id
+
+    @property
+    def cls_token_id(self) -> int:
+        """Return CLS token ID."""
+        return self.vocab.cls_token_id
+
+    @property
+    def sep_token_id(self) -> int:
+        """Return SEP token ID."""
+        return self.vocab.sep_token_id
+
+    def encode(
+        self,
+        function: NormalizedFunction,
+        max_length: Optional[int] = None,
+    ) -> list[int]:
+        """Encode a normalized function to token IDs.
+
+        Convenience method that wraps tokenize() and returns just the token IDs.
+
+        Args:
+            function: Normalized function to encode
+            max_length: Optional maximum length override
+
+        Returns:
+            List of token IDs
+        """
+        # Temporarily override max_length if provided
+        original_max_length = self.config.max_length
+        if max_length is not None:
+            self.config.max_length = max_length
+
+        try:
+            result = self.tokenize(function)
+            return result.input_ids
+        finally:
+            self.config.max_length = original_max_length
 
 
 def create_tokenizer(

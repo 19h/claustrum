@@ -8,10 +8,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import torch
 import numpy as np
+
+if TYPE_CHECKING:
+    from claustrum.tracing.predictor import TraceTokenizer
 
 
 class MaskingStrategy(Enum):
@@ -87,12 +90,13 @@ class TraceMaskingStrategy:
 
         # Respect attention mask (don't mask padding)
         if attention_mask is not None:
-            if attention_mask.dim() < prob_matrix.dim():
+            mask = attention_mask
+            if mask.dim() < prob_matrix.dim():
                 # Expand attention mask to match trace dimensions
-                for _ in range(prob_matrix.dim() - attention_mask.dim()):
-                    attention_mask = attention_mask.unsqueeze(-1)
-                attention_mask = attention_mask.expand_as(prob_matrix)
-            prob_matrix = prob_matrix * attention_mask.float()
+                for _ in range(prob_matrix.dim() - mask.dim()):
+                    mask = mask.unsqueeze(-1)
+                mask = mask.expand_as(prob_matrix)
+            prob_matrix = prob_matrix * mask.float()
 
         # Sample mask positions
         masked_indices = torch.bernoulli(prob_matrix).bool()
@@ -243,9 +247,10 @@ class TraceMaskingStrategy:
 
         # Respect attention mask
         if attention_mask is not None:
-            if attention_mask.dim() < prob_matrix.dim():
-                attention_mask = attention_mask.unsqueeze(-1).expand_as(prob_matrix)
-            prob_matrix = prob_matrix * attention_mask.float()
+            mask = attention_mask
+            if mask.dim() < prob_matrix.dim():
+                mask = mask.unsqueeze(-1).expand_as(prob_matrix)
+            prob_matrix = prob_matrix * mask.float()
 
         # Sample mask
         masked_indices = torch.bernoulli(prob_matrix).bool()

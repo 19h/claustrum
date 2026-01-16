@@ -293,13 +293,13 @@ class ClaustrumEncoder(nn.Module):
         # Embeddings
         hidden_states = self.embeddings(input_ids, token_type_ids, position_ids)
 
-        all_hidden_states = () if output_hidden_states else None
-        all_attentions = () if output_attentions else None
+        all_hidden_states: tuple[torch.Tensor, ...] = ()
+        all_attentions: tuple[torch.Tensor, ...] = ()
 
         # Transformer layers
         for layer in self.layers:
             if output_hidden_states:
-                all_hidden_states += (hidden_states,)
+                all_hidden_states = all_hidden_states + (hidden_states,)
 
             layer_outputs = layer(
                 hidden_states,
@@ -310,13 +310,13 @@ class ClaustrumEncoder(nn.Module):
             hidden_states = layer_outputs[0]
 
             if output_attentions:
-                all_attentions += (layer_outputs[1],)
+                all_attentions = all_attentions + (layer_outputs[1],)
 
         # Final layer norm
         hidden_states = self.final_layer_norm(hidden_states)
 
         if output_hidden_states:
-            all_hidden_states += (hidden_states,)
+            all_hidden_states = all_hidden_states + (hidden_states,)
 
         # Pooling: use [CLS] token (first token)
         cls_output = hidden_states[:, 0, :]
@@ -328,8 +328,8 @@ class ClaustrumEncoder(nn.Module):
         return {
             "last_hidden_state": hidden_states,
             "pooler_output": pooler_output,
-            "hidden_states": all_hidden_states,
-            "attentions": all_attentions,
+            "hidden_states": all_hidden_states if output_hidden_states else None,
+            "attentions": all_attentions if output_attentions else None,
         }
 
     def get_input_embeddings(self) -> nn.Embedding:

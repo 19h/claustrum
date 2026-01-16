@@ -18,7 +18,7 @@ import numpy as np
 import pyarrow.parquet as pq
 from torch.utils.data import Dataset, IterableDataset
 
-from claustrum.utils.types import ISA, FunctionMetadata
+from claustrum.utils.types import ISA
 from claustrum.normalization.normalized_ir import NormalizedInstruction
 
 

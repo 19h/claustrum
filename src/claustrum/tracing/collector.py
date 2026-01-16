@@ -11,7 +11,7 @@ import hashlib
 import struct
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Any, Callable
+from typing import Optional, Any, Callable, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
 
@@ -202,9 +202,9 @@ class UnicornBackend(EmulatorBackend):
     }
 
     def __init__(self):
-        self.uc = None
-        self.isa = None
-        self._registers = {}
+        self.uc: Any = None  # Unicorn emulator instance, typed as Any due to conditional import
+        self.isa: Optional[str] = None
+        self._registers: dict[str, int] = {}
 
     def initialize(self, isa: str) -> None:
         """Initialize Unicorn emulator."""

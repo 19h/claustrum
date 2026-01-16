@@ -253,6 +253,144 @@ class TieredLifter(IRLifter):
 
         raise LiftingError(f"Could not detect ISA for {binary_path}")
 
+    def lift_binary(
+        self,
+        binary_path: str,
+        isa: Optional[str] = None,
+    ) -> list[LiftedFunction]:
+        """Lift all functions in a binary file.
+
+        Args:
+            binary_path: Path to binary file
+            isa: Optional ISA hint for backend selection
+
+        Returns:
+            List of lifted functions
+        """
+        path = Path(binary_path)
+        functions: list[LiftedFunction] = []
+
+        # Get the best lifter for this ISA
+        if isa:
+            lifter = self.get_best_lifter(isa)
+        else:
+            # Try to detect ISA
+            try:
+                detected_isa = self.detect_isa(path)
+                lifter = self.get_best_lifter(detected_isa)
+            except LiftingError:
+                # Fall back to first available lifter
+                lifter = self._lifters[0] if self._lifters else None
+                if not lifter:
+                    raise LiftingError(f"No lifter available for {binary_path}")
+
+        # Use angr for function discovery if VEXLifter
+        if isinstance(lifter, VEXLifter):
+            try:
+                import angr
+
+                proj = angr.Project(str(path), auto_load_libs=False)
+                cfg = proj.analyses.CFGFast()
+
+                for func_addr in cfg.kb.functions:
+                    try:
+                        func = self.lift_function(path, func_addr, isa=isa)
+                        functions.append(func)
+                    except Exception:
+                        continue
+
+                return functions
+            except ImportError:
+                pass
+
+        # Fallback: Try to enumerate functions using the lifter's capabilities
+        # This is a simplified approach - real implementation would use
+        # binary analysis to discover function boundaries
+        raise LiftingError(
+            f"lift_binary not fully implemented for {lifter.name} backend. "
+            "Use lift_function with explicit function addresses."
+        )
+
+    def lift_bytes(
+        self,
+        func_bytes: bytes,
+        isa: str,
+        address: int = 0,
+    ) -> list[LiftedBlock]:
+        """Lift raw function bytes to IR blocks.
+
+        Args:
+            func_bytes: Raw machine code bytes
+            isa: Target ISA
+            address: Base address for the code
+
+        Returns:
+            List of lifted blocks
+        """
+        lifter = self.get_best_lifter(isa)
+
+        # For VEX lifter, we can lift bytes directly
+        if isinstance(lifter, VEXLifter):
+            try:
+                import pyvex
+                import archinfo
+
+                # Map ISA name to archinfo
+                arch_map = {
+                    "x86": archinfo.ArchX86(),
+                    "x86_64": archinfo.ArchAMD64(),
+                    "amd64": archinfo.ArchAMD64(),
+                    "arm32": archinfo.ArchARM(),
+                    "arm": archinfo.ArchARM(),
+                    "arm64": archinfo.ArchAArch64(),
+                    "aarch64": archinfo.ArchAArch64(),
+                    "mips32": archinfo.ArchMIPS32(),
+                    "mips": archinfo.ArchMIPS32(),
+                    "mips64": archinfo.ArchMIPS64(),
+                }
+
+                arch = arch_map.get(isa.lower())
+                if not arch:
+                    raise LiftingError(f"Unknown ISA for VEX lifting: {isa}")
+
+                # Lift to VEX IR
+                irsb = pyvex.lift(func_bytes, address, arch)
+
+                # Convert to our IR format
+                block = lifter._convert_vex_block(irsb, address)
+                return [block]
+
+            except ImportError:
+                pass
+
+        # For ESIL lifter
+        if isinstance(lifter, ESILLifter):
+            try:
+                import r2pipe
+                import tempfile
+                import os
+
+                # Write bytes to temp file
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".bin") as f:
+                    f.write(func_bytes)
+                    temp_path = f.name
+
+                try:
+                    r2 = r2pipe.open(temp_path, flags=["-2", f"-a{isa}", f"-b64"])
+                    r2.cmd(f"s {address}")
+                    block = lifter.lift_block(Path(temp_path), address, len(func_bytes))
+                    r2.quit()
+                    return [block]
+                finally:
+                    os.unlink(temp_path)
+
+            except ImportError:
+                pass
+
+        raise LiftingError(
+            f"lift_bytes not implemented for {lifter.name} backend with ISA {isa}"
+        )
+
 
 # Convenience functions
 def lift_function(

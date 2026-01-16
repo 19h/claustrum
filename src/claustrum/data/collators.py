@@ -7,7 +7,7 @@ for model training and inference.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, Union, cast
 
 import torch
 import numpy as np
@@ -32,20 +32,22 @@ class BaseCollator:
     max_length: int = 512
     pad_to_multiple_of: Optional[int] = 8
 
-    def __call__(self, features: list[dict[str, Any]]) -> dict[str, torch.Tensor]:
+    def __call__(self, features: list[Union[dict[str, Any], FunctionSample]]) -> dict[str, torch.Tensor]:
         """Collate a batch of samples.
 
         Args:
-            features: List of sample dictionaries
+            features: List of sample dictionaries or FunctionSample objects
 
         Returns:
             Batched tensors with padding
         """
         # Handle FunctionSample objects or dicts
         if features and isinstance(features[0], FunctionSample):
-            input_ids_list = [f.ir_tokens for f in features]
+            samples = cast(list[FunctionSample], features)
+            input_ids_list = [f.ir_tokens for f in samples]
         else:
-            input_ids_list = [f["input_ids"] for f in features]
+            dicts = cast(list[dict[str, Any]], features)
+            input_ids_list = [f["input_ids"] for f in dicts]
 
         # Find max length in batch
         batch_max_len = min(max(len(ids) for ids in input_ids_list), self.max_length)
@@ -173,20 +175,22 @@ class PretrainingCollator:
     max_length: int = 512
     mlm_probability: float = 0.15
 
-    def __call__(self, features: list[dict[str, Any]]) -> dict[str, torch.Tensor]:
+    def __call__(self, features: list[Union[dict[str, Any], FunctionSample]]) -> dict[str, torch.Tensor]:
         """Collate and apply masking for pretraining.
 
         Args:
-            features: List of sample dictionaries
+            features: List of sample dictionaries or FunctionSample objects
 
         Returns:
             Batched tensors with masked inputs and labels
         """
         # Get token sequences
         if isinstance(features[0], FunctionSample):
-            input_ids_list = [f.ir_tokens for f in features]
+            samples = cast(list[FunctionSample], features)
+            input_ids_list = [f.ir_tokens for f in samples]
         else:
-            input_ids_list = [f["input_ids"] for f in features]
+            dicts = cast(list[dict[str, Any]], features)
+            input_ids_list = [f["input_ids"] for f in dicts]
 
         batch_max_len = min(max(len(ids) for ids in input_ids_list), self.max_length)
         batch_max_len = ((batch_max_len + 7) // 8) * 8

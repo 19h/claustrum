@@ -9,7 +9,7 @@ ClaustrumEmbedder provides a high-level API for:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Optional, Union, List, cast
 
 import torch
 import torch.nn.functional as F
@@ -202,9 +202,9 @@ class ClaustrumEmbedder:
             # Tokenize batch
             tokenized = self.tokenizer.batch_tokenize(batch, return_tensors="pt")
 
-            # Move to device
-            input_ids = tokenized["input_ids"].to(self.device)
-            attention_mask = tokenized["attention_mask"].to(self.device)
+            # Move to device (batch_tokenize returns tensors when return_tensors="pt")
+            input_ids = cast(torch.Tensor, tokenized["input_ids"]).to(self.device)
+            attention_mask = cast(torch.Tensor, tokenized["attention_mask"]).to(self.device)
 
             # Generate embeddings
             outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
