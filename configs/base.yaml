@@ -1,0 +1,184 @@
+# CLAUSTRUM Base Configuration
+# Cross-ISA Semantic Code Embedding System
+
+# Model Architecture
+model:
+  # Vocabulary
+  vocab_size: 50000
+  
+  # Transformer encoder (BERT-style)
+  hidden_size: 768
+  num_hidden_layers: 12
+  num_attention_heads: 12
+  intermediate_size: 3072
+  hidden_dropout_prob: 0.1
+  attention_probs_dropout_prob: 0.1
+  max_position_embeddings: 512
+  
+  # Final embedding dimension
+  embedding_size: 256
+  
+  # GNN for CFG
+  use_cfg_gnn: true
+  gnn_hidden_size: 256
+  gnn_num_layers: 3
+  gnn_num_heads: 4
+  gnn_dropout: 0.1
+  
+  # Pooling
+  pooling_type: "attention"  # "attention", "mean", "cls", "hierarchical"
+  
+  # Activation
+  hidden_act: "gelu"
+  layer_norm_eps: 1.0e-12
+  initializer_range: 0.02
+
+# Training Configuration  
+training:
+  # Output
+  output_dir: "output/claustrum-base"
+  
+  # Duration
+  num_epochs: 100
+  max_steps: -1
+  
+  # Batch sizes
+  per_device_train_batch_size: 32
+  per_device_eval_batch_size: 64
+  gradient_accumulation_steps: 4
+  
+  # Optimizer
+  learning_rate: 3.0e-5
+  weight_decay: 0.01
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-8
+  max_grad_norm: 1.0
+  
+  # Learning rate schedule
+  warmup_ratio: 0.1
+  lr_scheduler_type: "cosine"
+  
+  # Contrastive learning
+  temperature: 0.07
+  use_hard_negatives: true
+  
+  # Curriculum learning
+  use_curriculum: true
+  curriculum_stages:
+    same_family: 10    # Epochs for same family pairs
+    similar_isa: 20    # Epochs for similar ISA pairs  
+    cross_paradigm: 30 # Epochs for CISC<->RISC pairs
+    stack_machines: 40 # Epochs for stack machines
+  
+  # Hard negative mining
+  mining_initial_temperature: 0.0
+  mining_final_temperature: 2.0
+  mining_warmup_epochs: 10
+  
+  # Checkpointing
+  save_strategy: "epoch"
+  save_steps: 500
+  save_total_limit: 3
+  
+  # Evaluation
+  eval_strategy: "epoch"
+  eval_steps: 500
+  
+  # Logging
+  logging_steps: 100
+  
+  # Distributed training
+  dataloader_num_workers: 4
+  
+  # Precision
+  fp16: false
+  bf16: false
+  
+  # Seeds
+  seed: 42
+
+# Pretraining Configuration
+pretraining:
+  # Masked Instruction Modeling
+  mlm_probability: 0.15
+  mlm_weight: 1.0
+  
+  # Context Window Prediction
+  cwp_weight: 0.5
+  cwp_num_pairs: 32
+  
+  # Def-Use Prediction
+  dup_weight: 0.5
+  dup_num_pairs: 32
+  
+  # Epochs
+  pretrain_epochs: 100
+
+# Data Configuration
+data:
+  # Dataset paths
+  train_data: "data/processed/train"
+  eval_data: "data/processed/eval"
+  
+  # Preprocessing
+  max_sequence_length: 512
+  
+  # ISA coverage
+  tier1_isas:
+    - x86
+    - x86_64
+    - arm32
+    - arm64
+    - mips32
+    - mips64
+    - ppc32
+    - ppc64
+  
+  tier2_isas:
+    - riscv32
+    - riscv64
+    - s390x
+    - sparc32
+    - sparc64
+  
+  tier3_isas:
+    - avr
+    - msp430
+    - xtensa
+    - m68k
+
+# Inference Configuration
+inference:
+  # Index type for similarity search
+  index_type: "ivf_pq"  # "flat", "ivf_pq", "hnsw"
+  
+  # IVF+PQ parameters
+  nlist: 4096
+  nprobe: 64
+  m: 64
+  nbits: 8
+  
+  # HNSW parameters
+  hnsw_m: 16
+  ef_construction: 200
+  ef_search: 64
+  
+  # Batch size
+  batch_size: 64
+  
+  # Device
+  device: "cuda"  # "cpu", "cuda"
+
+# Evaluation Configuration
+evaluation:
+  # Retrieval metrics
+  recall_ks: [1, 5, 10, 50]
+  
+  # Pool sizes for benchmarking
+  pool_sizes: [1000, 10000, 100000]
+  
+  # Target metrics (from plan)
+  target_recall_at_1: 0.60
+  target_mrr: 0.70
+  target_ari: 0.50
