@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Union, List, Tuple
+from typing import Optional, Union, List, Tuple, Any
 
 import numpy as np
 
@@ -51,9 +51,9 @@ class FAISSIndex:
 
     def __init__(self, config: Optional[IndexConfig] = None):
         self.config = config or IndexConfig()
-        self._index = None
+        self._index: Any = None  # FAISS index
         self._trained = False
-        self._metadata: dict = {}
+        self._metadata: dict[int, dict] = {}
 
     def build(
         self,

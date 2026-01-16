@@ -32,7 +32,9 @@ class BaseCollator:
     max_length: int = 512
     pad_to_multiple_of: Optional[int] = 8
 
-    def __call__(self, features: list[Union[dict[str, Any], FunctionSample]]) -> dict[str, torch.Tensor]:
+    def __call__(
+        self, features: list[Union[dict[str, Any], FunctionSample]]
+    ) -> dict[str, torch.Tensor]:
         """Collate a batch of samples.
 
         Args:
@@ -154,7 +156,7 @@ class ContrastiveCollator:
         }
 
         # Add ISA information for analysis
-        batch["isas"] = [s.isa for s in all_samples]
+        batch["isas"] = [s.isa for s in all_samples]  # type: ignore[assignment]
 
         return batch
 
@@ -175,7 +177,9 @@ class PretrainingCollator:
     max_length: int = 512
     mlm_probability: float = 0.15
 
-    def __call__(self, features: list[Union[dict[str, Any], FunctionSample]]) -> dict[str, torch.Tensor]:
+    def __call__(
+        self, features: list[Union[dict[str, Any], FunctionSample]]
+    ) -> dict[str, torch.Tensor]:
         """Collate and apply masking for pretraining.
 
         Args:

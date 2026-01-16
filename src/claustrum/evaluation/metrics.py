@@ -405,30 +405,31 @@ def benchmark_retrieval(
 
 # Convenience functions for training scripts
 
+
 def compute_retrieval_metrics(
     embeddings: np.ndarray,
     labels: np.ndarray,
     ks: list[int] = [1, 5, 10],
 ) -> dict[str, float]:
     """Compute retrieval metrics and return as dictionary.
-    
+
     Convenience function for use in training loops.
-    
+
     Args:
         embeddings: (N, D) embeddings
         labels: (N,) labels
         ks: K values for Recall@K
-        
+
     Returns:
         Dictionary with metric names and values
     """
     metrics = evaluate_retrieval(embeddings, labels, ks=tuple(ks))
-    
+
     result = {
         "mrr": metrics.mrr,
         "map": metrics.map_score,
     }
-    
+
     for k in ks:
         if k == 1:
             result["recall@1"] = metrics.recall_at_1
@@ -438,7 +439,7 @@ def compute_retrieval_metrics(
             result["recall@10"] = metrics.recall_at_10
         elif k == 50:
             result["recall@50"] = metrics.recall_at_50
-            
+
     return result
 
 
@@ -448,28 +449,28 @@ def compute_clustering_metrics(
     n_clusters: Optional[int] = None,
 ) -> dict[str, float]:
     """Compute clustering metrics using KMeans.
-    
+
     Convenience function for use in training loops.
-    
+
     Args:
         embeddings: (N, D) embeddings
         labels: (N,) true labels
         n_clusters: Number of clusters (auto-detected from labels if None)
-        
+
     Returns:
         Dictionary with metric names and values
     """
     from sklearn.cluster import KMeans
-    
+
     if n_clusters is None:
         n_clusters = len(np.unique(labels))
-        
+
     # Run KMeans clustering
-    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)  # type: ignore[arg-type]
     predicted = kmeans.fit_predict(embeddings)
-    
+
     metrics = evaluate_clustering(embeddings, predicted, labels)
-    
+
     return {
         "ari": metrics.ari,
         "nmi": metrics.nmi,

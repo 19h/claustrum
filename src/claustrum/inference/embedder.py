@@ -9,7 +9,7 @@ ClaustrumEmbedder provides a high-level API for:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Union, List, cast
+from typing import Optional, Union, List, cast, Any
 
 import torch
 import torch.nn.functional as F
@@ -57,9 +57,9 @@ class ClaustrumEmbedder:
         self.model = self.model.to(self.device)
         self.model.eval()
 
-        # Index for similarity search
-        self._index = None
-        self._index_metadata = {}
+        # Index for similarity search (FAISS index)
+        self._index: Any = None
+        self._index_metadata: dict[int, dict] = {}
 
     @classmethod
     def from_pretrained(

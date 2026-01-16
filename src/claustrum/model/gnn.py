@@ -6,7 +6,7 @@ embeddings using control flow graph structure.
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -61,7 +61,7 @@ class GraphAttentionLayer(nn.Module):
         x: torch.Tensor,
         edge_index: torch.Tensor,
         return_attention_weights: bool = False,
-    ) -> Tuple[torch.Tensor, ...]:
+    ) -> Union[Tuple[torch.Tensor], Tuple[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]]:
         """Forward pass.
 
         Args:
@@ -206,7 +206,7 @@ class CFGAttentionNetwork(nn.Module):
         # Graph-level pooling
         if batch is not None:
             # Batched graphs - pool per graph
-            num_graphs = batch.max().item() + 1
+            num_graphs = int(batch.max().item()) + 1
             graph_embeddings = torch.zeros(num_graphs, h.size(-1), device=h.device)
 
             # Mean pooling per graph

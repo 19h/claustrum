@@ -123,7 +123,7 @@ def quantize_model(
         quantize_static(
             str(onnx_path),
             str(output_path),
-            CalibrationDataReader(calibration_data),
+            CalibrationDataReader(calibration_data),  # type: ignore[arg-type]
             weight_type=QuantType.QInt8,
         )
     else:

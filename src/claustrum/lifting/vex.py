@@ -185,7 +185,7 @@ class VEXLifter(IRLifter):
         elif isinstance(expr, pyvex.IRExpr.Get):
             # Register read
             offset = expr.offset
-            size = expr.result_size(None) if hasattr(expr, "result_size") else 64
+            size = expr.result_size(None) if hasattr(expr, "result_size") else 64  # type: ignore[arg-type]
             return IROperand.reg(f"r{offset}", size), extra_instrs, temp_counter
 
         elif isinstance(expr, pyvex.IRExpr.Load):

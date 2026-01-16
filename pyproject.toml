@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=64", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "claustrum"
@@ -39,7 +39,7 @@ dependencies = [
     "faiss-cpu>=1.7.4",
     
     # Binary Analysis
-    "angr>=9.2.0",          # VEX IR lifting
+    "angr>=9.2.0",           # VEX IR lifting
     "capstone>=5.0.0",       # Disassembly
     "pyvex>=9.2.0",          # VEX bindings
     "archinfo>=9.2.0",       # Architecture information
@@ -73,28 +73,22 @@ dependencies = [
 
 [project.optional-dependencies]
 tracing = [
-    "unicorn>=2.0.0",       # CPU emulation for trace collection
+    "unicorn>=2.0.0",        # CPU emulation for trace collection
 ]
-
-[project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "pytest-asyncio>=0.21.0",
-    "black>=23.12.0",
     "ruff>=0.1.8",
     "mypy>=1.7.0",
     "pre-commit>=3.6.0",
+    "pyright>=1.1.0",
 ]
 gpu = [
-    "faiss-gpu>=1.7.4",
-    "tensorrt>=8.6.0",
+    "faiss-gpu>=1.7.2",
 ]
 ghidra = [
-    "pyhidra>=1.0.0",       # Ghidra Python bindings
-]
-tracing = [
-    "unicorn>=2.0.0",       # CPU emulation for trace collection
+    "pyhidra>=1.0.0",        # Ghidra Python bindings
 ]
 docs = [
     "sphinx>=7.2.0",
@@ -115,28 +109,14 @@ Homepage = "https://github.com/claustrum/claustrum"
 Documentation = "https://claustrum.readthedocs.io"
 Repository = "https://github.com/claustrum/claustrum"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-data]
-claustrum = ["configs/*.yaml", "data/*.json"]
-
-[tool.black]
-line-length = 100
-target-version = ["py310", "py311", "py312"]
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-    | \.venv
-    | build
-    | dist
-)/
-'''
+[tool.hatch.build.targets.wheel]
+packages = ["src/claustrum"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint]
 select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
@@ -147,13 +127,17 @@ select = [
     "UP",  # pyupgrade
 ]
 ignore = [
-    "E501",  # line too long (handled by black)
+    "E501",  # line too long (handled by formatter)
     "B008",  # function call in default argument
     "C901",  # too complex
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["claustrum"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.mypy]
 python_version = "3.10"
@@ -162,9 +146,27 @@ warn_unused_configs = true
 ignore_missing_imports = true
 exclude = ["tests/", "scripts/"]
 
+[tool.pyright]
+include = ["src"]
+exclude = ["**/node_modules", "**/__pycache__", ".venv"]
+pythonVersion = "3.10"
+typeCheckingMode = "basic"
+reportMissingImports = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "-v --cov=claustrum --cov-report=term-missing"
 asyncio_mode = "auto"
+
+[dependency-groups]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.1.8",
+    "mypy>=1.7.0",
+    "pre-commit>=3.6.0",
+    "pyright>=1.1.0",
+]

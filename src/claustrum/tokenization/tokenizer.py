@@ -52,8 +52,8 @@ class TokenizerConfig:
 class TokenizedOutput:
     """Output of tokenization."""
 
-    input_ids: list[int]
-    attention_mask: list[int]
+    input_ids: Any  # list[int] or torch.Tensor or np.ndarray depending on return_tensors
+    attention_mask: Any  # list[int] or torch.Tensor or np.ndarray depending on return_tensors
 
     # Original token strings (for debugging)
     tokens: Optional[list[str]] = None

@@ -327,7 +327,7 @@ def create_mlm_masks(
 
     # Get mask positions for each sample
     # (Fixed size by taking max number of masked across batch)
-    num_masked = masked.sum(dim=1).max().item()
+    num_masked = int(masked.sum(dim=1).max().item())
     mask_positions = torch.zeros(batch_size, num_masked, dtype=torch.long, device=device)
 
     for i in range(batch_size):

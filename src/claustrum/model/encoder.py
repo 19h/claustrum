@@ -48,6 +48,7 @@ class ClaustrumEmbeddings(nn.Module):
             "position_ids",
             torch.arange(config.max_position_embeddings).expand((1, -1)),
         )
+        self.position_ids: torch.Tensor  # Type hint for the buffer
 
     def forward(
         self,

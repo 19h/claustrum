@@ -126,7 +126,7 @@ class HardNegativeMiner:
 
             if valid_count > 0:
                 # Sample without replacement if possible
-                k = min(num_neg, valid_count)
+                k = int(min(num_neg, valid_count))
                 try:
                     sampled = torch.multinomial(probs, k, replacement=False)
                 except RuntimeError:
@@ -320,7 +320,7 @@ class ProgressiveHardNegativeMiner(HardNegativeMiner):
             valid_count = (probs > 0).sum().item()
 
             if valid_count > 0:
-                k = min(num_neg, valid_count)
+                k = int(min(num_neg, valid_count))
                 try:
                     sampled = torch.multinomial(probs, k, replacement=False)
                 except RuntimeError:
@@ -339,7 +339,7 @@ class ProgressiveHardNegativeMiner(HardNegativeMiner):
         neg_weights = neg_weights / neg_weights.sum(dim=-1, keepdim=True).clamp(min=1e-10)
 
         return neg_embeddings, neg_weights
-    
+
     def sample_hard_negatives(
         self,
         query_embeddings: torch.Tensor,
@@ -347,33 +347,33 @@ class ProgressiveHardNegativeMiner(HardNegativeMiner):
         num_negatives: Optional[int] = None,
     ) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
         """Sample hard negatives from memory bank.
-        
+
         Convenience method that returns None if memory is not ready.
-        
+
         Args:
             query_embeddings: (batch, dim) query embeddings
             query_labels: (batch,) query labels
             num_negatives: Number of negatives to sample
-            
+
         Returns:
             Tuple of (embeddings, labels) or (None, None) if not ready
         """
         if not self._memory_initialized:
             return None, None
-        
+
         memory_labels = self._memory_labels
         if memory_labels is None:
             return None, None
-        
+
         num_neg = num_negatives if num_negatives is not None else self.config.num_negatives
         valid_count = (memory_labels >= 0).sum().item()
         if valid_count < num_neg * 2:
             return None, None
-        
+
         neg_embeddings, neg_weights = self.mine_from_memory(
             query_embeddings, query_labels, num_negatives
         )
-        
+
         # Create pseudo-labels for negatives (different from all queries)
         max_label = query_labels.max().item()
         neg_labels = torch.arange(
@@ -381,13 +381,13 @@ class ProgressiveHardNegativeMiner(HardNegativeMiner):
             max_label + 1 + neg_embeddings.size(0),
             device=neg_embeddings.device,
         )
-        
+
         # Flatten to (batch * num_neg, dim)
         neg_embeddings_flat = neg_embeddings.view(-1, neg_embeddings.size(-1))
         neg_labels_flat = neg_labels.repeat_interleave(neg_embeddings.size(1))
-        
+
         return neg_embeddings_flat, neg_labels_flat
-    
+
     def state_dict(self) -> dict:
         """Get state dict for checkpointing."""
         return {
@@ -397,7 +397,7 @@ class ProgressiveHardNegativeMiner(HardNegativeMiner):
             "memory_initialized": self._memory_initialized,
             "temperature": self.temperature,
         }
-    
+
     def load_state_dict(self, state_dict: dict) -> None:
         """Load state dict."""
         self._memory_embeddings = state_dict.get("memory_embeddings")

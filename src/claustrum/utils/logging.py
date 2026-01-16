@@ -93,7 +93,7 @@ class LogContext:
         self._token: Optional[int] = None
 
     def __enter__(self) -> "LogContext":
-        self._token = logger.configure(extra=self.context)
+        self._token = logger.configure(extra=self.context)  # type: ignore[assignment]
         return self
 
     def __exit__(self, *args: Any) -> None:

@@ -135,7 +135,7 @@ class TraceMaskingStrategy:
         for b in range(batch_size):
             # Get valid length from attention mask
             if attention_mask is not None:
-                valid_len = attention_mask[b].sum().item()
+                valid_len = int(attention_mask[b].sum().item())
             else:
                 valid_len = seq_len
 
@@ -324,7 +324,7 @@ def prepare_trace_batch(
         for b in range(batch_size):
             for s in range(seq_len):
                 for r in range(num_regs):
-                    value = trace_values[b, s, r].item()
+                    value = int(trace_values[b, s, r].item())
                     bucket = trace_tokenizer.value_to_bucket(value)
                     tokenized[b, s, r] = bucket + 3  # Offset for special tokens
 
